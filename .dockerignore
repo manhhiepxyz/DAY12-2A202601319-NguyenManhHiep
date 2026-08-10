@@ -1,6 +1,15 @@
 # TODO (CP2): file này quyết định thứ KHÔNG được copy vào image.
 # Bỏ sót .env = leak secret vào image. Bỏ sót .git = image phình to.
 # Bổ sung đủ các mục còn thiếu — xem tests/test_cp2.py để biết yêu cầu.
+# Bí mật - tuyệt đối không vào image
+.env
 
+#Rác python
+__pycache__
+
+#Quản lý phiên bản và môi trường ảo - image phình to, không cần thiết
 .git
 .gitignore
+.venv
+
+#Lưu ý: dockerignore không chứa dòng app, utils, requirements.txt vì đó là những thứ image cần copy vào để chạy. Chỉ bỏ những thứ không cần thiết, rác, bí mật.

@@ -40,9 +40,42 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # TODO (CP1): khai báo 6 trường theo bảng trên, ví dụ:
-    #     port: int = 8000
-    #     agent_api_key: str
+    # ─────────────────────────────────────────────────────────────
+    # CP1 — 6 trường cấu hình theo bảng trong docstring
+    # ─────────────────────────────────────────────────────────────
+    # pydantic-settings tự ánh xạ tên trường sang biến môi trường viết hoa:
+    #   agent_api_key          ← AGENT_API_KEY
+    #   rate_limit_per_minute  ← RATE_LIMIT_PER_MINUTE
+    # (bỏ qua gạch dưới khi so khớp tên)
+
+    # port — cổng HTTP. Có mặc định 8000 vì đây KHÔNG phải secret; cloud
+    # (Railway/Render/Cloud Run) ghi đè bằng biến PORT do platform tự set.
+    port: int = 8000
+
+    # agent_api_key — khóa bảo vệ /ask. KHÔNG có mặc định: thiếu biến
+    # AGENT_API_KEY là pydantic ném ValidationError → app chết ngay lúc
+    # khởi động (fail fast). Nếu có mặc định, quên set secret trên cloud
+    # thì app vẫn chạy với khóa ai cũng đoán được — phát hiện ra quá muộn.
+    agent_api_key: str
+
+    # redis_url — địa chỉ Redis chứa lịch sử hội thoại, rate limit, chi phí.
+    # Mặc định là Redis Docker ở máy; dùng "fake://" khi chưa có Docker.
+    redis_url: str = "redis://localhost:6379/0"
+
+    # rate_limit_per_minute — số request tối đa mỗi user mỗi phút.
+    rate_limit_per_minute: int = 10
+
+    # monthly_budget_usd — ngân sách tối đa mỗi user mỗi tháng (USD).
+    monthly_budget_usd: float = 10.0
+
+    # log_level — mức log: DEBUG | INFO | WARNING | ERROR.
+    log_level: str = "INFO"
+    port: int = 8000
+    agent_api_key: str
+    redis_url: str = "redis://localhost:6379/0"
+    rate_liment_per_minute: int = 10
+    monthly_budget_usd: float = 10.0
+    log_level: str = "INFO"
 
 
 @lru_cache(maxsize=1)

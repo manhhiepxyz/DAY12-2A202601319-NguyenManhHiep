@@ -9,10 +9,10 @@
 **Mục lục**
 
 - [CP0 — Setup (9h00–9h20)](#cp0--setup-9h009h20)
-- [Block 1 — 12-Factor Config, Health & Logging (9h20–10h00)](#block-1--12-factor-config-health--logging-9h2010h00)
+- [Block 1 — 12-Factor Config, Health &amp; Logging (9h20–10h00)](#block-1--12-factor-config-health--logging-9h2010h00)
 - [Block 2 — Docker (10h00–10h45)](#block-2--docker-10h0010h45)
 - [Block 3 — API Security (10h55–11h40)](#block-3--api-security-10h5511h40)
-- [Block 4 — Scaling & Reliability (11h40–12h20)](#block-4--scaling--reliability-11h4012h20)
+- [Block 4 — Scaling &amp; Reliability (11h40–12h20)](#block-4--scaling--reliability-11h4012h20)
 - [Block 5 — Cloud Deployment (12h20–12h50)](#block-5--cloud-deployment-12h2012h50)
 - [Bonus — CI/CD với GitHub Actions (+10 điểm)](#bonus--cicd-với-github-actions-10-điểm)
 - [Wrap-up (12h50–13h00)](#wrap-up-12h5013h00)
@@ -284,11 +284,11 @@ của người lạ là một lần bạn trả tiền cho nhà cung cấp LLM.
 
 Ba lớp, ba câu hỏi khác nhau:
 
-| Lớp | Câu hỏi | Mã lỗi |
-|-----|---------|--------|
-| Authentication | Bạn là ai? | 401 |
-| Rate limiting | Bạn gọi có quá nhanh không? | 429 |
-| Cost guard | Bạn đã tiêu hết ngân sách chưa? | 402 |
+| Lớp           | Câu hỏi                               | Mã lỗi |
+| -------------- | --------------------------------------- | -------- |
+| Authentication | Bạn là ai?                            | 401      |
+| Rate limiting  | Bạn gọi có quá nhanh không?        | 429      |
+| Cost guard     | Bạn đã tiêu hết ngân sách chưa? | 402      |
 
 ### Việc cần làm
 
@@ -314,6 +314,7 @@ expire(key, 60)                      # key tự dọn
 ```
 
 Hai chi tiết dễ sai:
+
 - **Kiểm tra trước, ghi nhận sau.** Ghi trước rồi đếm sẽ chặn nhầm ngay ở
   request thứ `limit`.
 - **Member phải duy nhất** (`f"{now}:{uuid4().hex}"`). Hai request cùng
@@ -408,6 +409,7 @@ container B. Nếu lịch sử nằm trong RAM của A thì B không biết gì 
 trí nhớ" ngẫu nhiên. Đó là lý do stateless không phải tùy chọn.
 
 Hai chi tiết bắt buộc:
+
 - `ltrim` giữ tối đa `HISTORY_MAX_MESSAGES` message gần nhất — prompt dài vô hạn
   = tiền token vô hạn
 - `expire` để hội thoại cũ tự hết hạn — không thì Redis đầy dần đến khi sập
@@ -425,11 +427,11 @@ Redis chết  →  503 {"status": "not ready", "redis": false}
 
 Khác `/health` ở đúng một điểm cốt lõi:
 
-| | `/health` (liveness) | `/ready` (readiness) |
-|---|---|---|
-| Câu hỏi | Process còn sống không? | Nhận traffic được chưa? |
-| Kiểm tra dependency | **Không** | **Có** |
-| Trả 503 thì sao | Orchestrator **restart** container | LB **ngừng gửi** request, không restart |
+|                      | `/health` (liveness)                  | `/ready` (readiness)                          |
+| -------------------- | --------------------------------------- | ----------------------------------------------- |
+| Câu hỏi            | Process còn sống không?              | Nhận traffic được chưa?                    |
+| Kiểm tra dependency | **Không**                        | **Có**                                   |
+| Trả 503 thì sao    | Orchestrator**restart** container | LB**ngừng gửi** request, không restart |
 
 Gộp hai cái làm một là lỗi kinh điển: Redis mất kết nối 30 giây → cả 3 container
 đều báo unhealthy → orchestrator restart cả 3 cùng lúc → khi Redis quay lại thì
@@ -507,11 +509,11 @@ pytest tests/test_cp4.py -v
 
 ### Chọn platform
 
-| Platform | Độ khó | Free tier | Redis kèm theo |
-|----------|--------|-----------|----------------|
-| **Railway** | ⭐ | $5 credit dùng thử | Có, thêm 1 click |
-| **Render** | ⭐⭐ | 750 giờ/tháng | Có (Key Value) |
-| Cloud Run | ⭐⭐⭐ | 2 triệu request/tháng | Không — cần Memorystore/Upstash |
+| Platform          | Độ khó | Free tier               | Redis kèm theo                    |
+| ----------------- | --------- | ----------------------- | ---------------------------------- |
+| **Railway** | ⭐        | $5 credit dùng thử    | Có, thêm 1 click                 |
+| **Render**  | ⭐⭐      | 750 giờ/tháng         | Có (Key Value)                    |
+| Cloud Run         | ⭐⭐⭐    | 2 triệu request/tháng | Không — cần Memorystore/Upstash |
 
 Chọn Railway nếu bạn muốn xong nhanh. Cả hai đều đọc `Dockerfile` bạn vừa viết.
 
@@ -632,11 +634,11 @@ chạy test, build image, và **chỉ khi tất cả xanh** mới deploy. Mọi 
 
 Đặt file YAML vào `.github/workflows/`, GitHub tự đọc và chạy. Ba khái niệm:
 
-| Khái niệm | Là gì |
-|-----------|-------|
-| **workflow** | một file YAML, kích hoạt bởi một sự kiện (`on:`) |
-| **job** | một nhóm bước chạy trên một máy ảo riêng; các job mặc định chạy **song song** |
-| **step** | một lệnh (`run:`) hoặc một action dùng lại của người khác (`uses:`) |
+| Khái niệm        | Là gì                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| **workflow** | một file YAML, kích hoạt bởi một sự kiện (`on:`)                                         |
+| **job**      | một nhóm bước chạy trên một máy ảo riêng; các job mặc định chạy**song song** |
+| **step**     | một lệnh (`run:`) hoặc một action dùng lại của người khác (`uses:`)                 |
 
 Điểm hay bị hiểu nhầm: job chạy song song, nên `deploy` sẽ chạy **cùng lúc** với
 `test` nếu bạn không nói gì. `needs:` là thứ xâu chúng lại thành dây chuyền.
@@ -806,22 +808,23 @@ Nộp **link repository** lên LMS. Đối chiếu lại [danh sách kiểm tra]
 
 ## Phụ Lục A — Lỗi Thường Gặp
 
-| Triệu chứng | Nguyên nhân thường gặp | Cách xử lý |
-|-------------|------------------------|------------|
-| `ValidationError: agent_api_key Field required` | chưa có `.env` hoặc thiếu biến | `cp .env.example .env` rồi điền khóa |
-| `ConnectionError: Error 61 connecting to localhost:6379` | Redis chưa chạy | `docker compose up -d redis` hoặc `REDIS_URL=fake://` |
-| `ModuleNotFoundError: No module named 'app'` | chạy pytest từ thư mục con | chạy từ gốc repo |
-| `curl: (7) Failed to connect` | uvicorn bind `127.0.0.1` trong container | đổi sang `--host 0.0.0.0` |
-| Container start rồi tắt ngay | thiếu biến môi trường | `docker compose logs agent` |
-| `docker build` không dùng cache | `COPY . .` đứng trước `pip install` | đảo thứ tự |
-| Image > 500MB | build 1 stage, hoặc base image không slim | multi-stage + `python:3.11-slim` |
-| 429 xuất hiện quá sớm | `zadd` trước `zcard` | kiểm tra trước, ghi nhận sau |
-| `/ready` luôn 200 dù Redis chết | không dùng kết quả `ping()` | `if not store.ping(): return 503` |
-| Deploy xong health check fail | app không đọc `$PORT` | `--port ${PORT:-8000}` |
+| Triệu chứng                                              | Nguyên nhân thường gặp                          | Cách xử lý                                              |
+| ---------------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------- |
+| `ValidationError: agent_api_key Field required`          | chưa có`.env` hoặc thiếu biến                 | `cp .env.example .env` rồi điền khóa                 |
+| `ConnectionError: Error 61 connecting to localhost:6379` | Redis chưa chạy                                    | `docker compose up -d redis` hoặc `REDIS_URL=fake://` |
+| `ModuleNotFoundError: No module named 'app'`             | chạy pytest từ thư mục con                       | chạy từ gốc repo                                        |
+| `curl: (7) Failed to connect`                            | uvicorn bind`127.0.0.1` trong container            | đổi sang`--host 0.0.0.0`                               |
+| Container start rồi tắt ngay                             | thiếu biến môi trường                           | `docker compose logs agent`                              |
+| `docker build` không dùng cache                        | `COPY . .` đứng trước `pip install`          | đảo thứ tự                                             |
+| Image > 500MB                                              | build 1 stage, hoặc base image không slim          | multi-stage +`python:3.11-slim`                          |
+| 429 xuất hiện quá sớm                                  | `zadd` trước `zcard`                           | kiểm tra trước, ghi nhận sau                           |
+| `/ready` luôn 200 dù Redis chết                       | không dùng kết quả`ping()`                     | `if not store.ping(): return 503`                        |
+| Deploy xong health check fail                              | app không đọc`$PORT` | `--port ${PORT:-8000}` |                                                            |
 
 ## Phụ Lục B — Bảng Tra Nhanh
 
 **pytest**
+
 ```bash
 pytest tests/test_cp3.py -v            # một checkpoint
 pytest tests/ -v -m "not docker"       # bỏ qua test build (nhanh hơn nhiều)
@@ -830,6 +833,7 @@ pytest tests/test_cp3.py -k rate       # chỉ chạy test có "rate" trong tên
 ```
 
 **Docker**
+
 ```bash
 docker build -t day12-agent:prod .
 docker images day12-agent:prod                 # xem dung lượng
@@ -840,6 +844,7 @@ docker compose down -v                         # dọn sạch, xóa cả volume
 ```
 
 **Redis**
+
 ```bash
 docker compose exec redis redis-cli KEYS '*'
 docker compose exec redis redis-cli LRANGE history:sv01 0 -1
@@ -849,11 +854,11 @@ docker compose exec redis redis-cli ZCARD ratelimit:sv01
 
 **Mã trạng thái HTTP dùng trong lab**
 
-| Mã | Ý nghĩa | Xuất hiện khi |
-|----|---------|---------------|
-| 200 | OK | mọi thứ ổn |
-| 401 | Unauthorized | thiếu/sai API key |
-| 402 | Payment Required | hết ngân sách tháng |
+| Mã | Ý nghĩa            | Xuất hiện khi                       |
+| --- | -------------------- | ------------------------------------- |
+| 200 | OK                   | mọi thứ ổn                         |
+| 401 | Unauthorized         | thiếu/sai API key                    |
+| 402 | Payment Required     | hết ngân sách tháng               |
 | 422 | Unprocessable Entity | body sai định dạng (pydantic bắt) |
-| 429 | Too Many Requests | vượt rate limit |
-| 503 | Service Unavailable | chưa ready, hoặc đang tắt dần |
+| 429 | Too Many Requests    | vượt rate limit                     |
+| 503 | Service Unavailable  | chưa ready, hoặc đang tắt dần    |

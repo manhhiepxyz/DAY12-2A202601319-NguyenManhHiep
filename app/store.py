@@ -47,34 +47,48 @@ class ConversationStore:
     def ping(self) -> bool:
         """Redis có trả lời không? Dùng cho endpoint /ready.
 
-        TODO (CP4): gọi ``self.client.ping()`` trong try/except.
-        Trả ``True`` nếu thành công, ``False`` nếu có bất kỳ Exception nào
-        (mất mạng, sai mật khẩu, Redis chưa khởi động...).
-        """
-        raise NotImplementedError("TODO (CP4): cài đặt ping")
+        # TODO (CP4): gọi ``self.client.ping()`` trong try/except.
+        # Trả ``True`` nếu thành công, ``False`` nếu có bất kỳ Exception nào
+        # (mất mạng, sai mật khẩu, Redis chưa khởi động...).
+        # """
+        # raise NotImplementedError("TODO (CP4): cài đặt ping")
+        try: 
+            return self.client.ping()
+        except Exception:
+            return False # mất mạng, sai mật khẩu, Redis chưa khởi động... Trả False nếu có bất kỳ Exception nào
 
     def append(self, user_id: str, role: str, content: str) -> None:
         """Ghi thêm một lượt vào lịch sử.
 
-        TODO (CP4):
-          1. ``self.client.rpush(key, json.dumps({"role": role, "content": content},
-             ensure_ascii=False))``
-          2. ``self.client.ltrim(key, -HISTORY_MAX_MESSAGES, -1)`` — chỉ giữ
-             ``HISTORY_MAX_MESSAGES`` message gần nhất, nếu không prompt sẽ
-             phình vô hạn và tiền token cũng vậy.
-          3. ``self.client.expire(key, HISTORY_TTL_SECONDS)`` — hội thoại cũ
-             tự hết hạn, khỏi phải dọn tay.
-        """
-        raise NotImplementedError("TODO (CP4): cài đặt append")
+        # TODO (CP4):
+        #   1. ``self.client.rpush(key, json.dumps({"role": role, "content": content},
+        #      ensure_ascii=False))``
+        #   2. ``self.client.ltrim(key, -HISTORY_MAX_MESSAGES, -1)`` — chỉ giữ
+        #      ``HISTORY_MAX_MESSAGES`` message gần nhất, nếu không prompt sẽ
+        #      phình vô hạn và tiền token cũng vậy.
+        #   3. ``self.client.expire(key, HISTORY_TTL_SECONDS)`` — hội thoại cũ
+        #      tự hết hạn, khỏi phải dọn tay.
+        # """
+        # raise NotImplementedError("TODO (CP4): cài đặt append")
+        key = self._key(user_id)
+        # 1. Ghi message vào cuối danh sách - role: user | assistant, content: nội dung
+        self.client.rpush(key, json.dumps({"role": role, "content": content}, ensure_ascii=False))
+        # 2. CHỉ giữ HISTORY_MAX_MESSAGES message gần nhất, nếu không prompt sẽ phình vô hạn và tiền token cũng vậy.
+        self.client.ltrim(key, -HISTORY_MAX_MESSAGES, -1)
+        # 3. TTL 7 ngày - hội thoại cũ tự hết hạn, khỏi phải dọn tay.
+        self.client.expire(key, HISTORY_TTL_SECONDS)
+        
 
     def get_history(self, user_id: str) -> list[dict]:
         """Đọc lịch sử hội thoại, cũ nhất trước.
 
-        TODO (CP4): ``self.client.lrange(key, 0, -1)`` rồi ``json.loads``
-        từng phần tử. Chưa có gì → trả về list rỗng.
-        """
-        raise NotImplementedError("TODO (CP4): cài đặt get_history")
-
+        # TODO (CP4): ``self.client.lrange(key, 0, -1)`` rồi ``json.loads``
+        # từng phần tử. Chưa có gì → trả về list rỗng.
+        # """
+        # raise NotImplementedError("TODO (CP4): cài đặt get_history")
+        key = self._key(user_id)
+        raw_items = self.client.lrange(key, 0, -1) # [] khi chưa có gì
+        return [json.loads(item) for item in raw_items] # list rỗng nếu chưa
     def clear(self, user_id: str) -> None:
         """CHO SẴN — xóa lịch sử của một user."""
         self.client.delete(self._key(user_id))

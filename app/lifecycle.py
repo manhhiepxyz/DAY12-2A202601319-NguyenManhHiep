@@ -44,20 +44,33 @@ class Lifecycle:
         tham số này. Không làm gì nặng ở đây (không gọi mạng, không ghi file)
         — handler chạy xen giữa bytecode.
         """
-        raise NotImplementedError("TODO (CP4): cài đặt request_shutdown")
+        # 1. Bật cờ "đang tắt dần" — /health sẽ trả 503, LB rút instance
+        self.shutting_down = True
+
+        # 2. Gọi lại handler cũ (của uvicorn) — nó mới thật sự dừng server.
+        #    Mỗi tín hiệu chỉ có MỘT handler: ghi đè mà không gọi lại thì
+        #    uvicorn không bao giờ nhận được SIGTERM → app chạy tiếp mãi mãi
+        #    cho tới khi orchestrator SIGKILL (tệ hơn là không viết gì).
+        previous = self._previous.get(signum)
+        if callable(previous):
+            previous(signum, frame)
 
     def install(self) -> None:
         """Đăng ký handler cho SIGTERM và SIGINT, nhớ lại handler cũ.
 
-        TODO (CP4): với mỗi tín hiệu trong ``(signal.SIGTERM, signal.SIGINT)``:
+        # TODO (CP4): với mỗi tín hiệu trong ``(signal.SIGTERM, signal.SIGINT)``:
 
-            self._previous[sig] = signal.getsignal(sig)   # nhớ handler cũ
-            signal.signal(sig, self.request_shutdown)     # rồi mới ghi đè
+        #     self._previous[sig] = signal.getsignal(sig)   # nhớ handler cũ
+        #     signal.signal(sig, self.request_shutdown)     # rồi mới ghi đè
 
-        SIGTERM: orchestrator yêu cầu tắt. SIGINT: bạn bấm Ctrl+C.
-        """
-        raise NotImplementedError("TODO (CP4): cài đặt install")
-
+        # SIGTERM: orchestrator yêu cầu tắt. SIGINT: bạn bấm Ctrl+C.
+        # """
+        # raise NotImplementedError("TODO (CP4): cài đặt install")
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            # Bước 1: Nhớ handler cũ (của uvicorn) để gọi lại sau khi bật cờ "đang tắt"
+            self._previous[sig] = signal.getsignal(sig)
+            # Bước 2: Rồi mới ghi đè handler của uvicorn bằng request_shutdown  
+            signal.signal(sig, self.request_shutdown) 
 
 # Một instance dùng chung cho cả app
 lifecycle = Lifecycle()

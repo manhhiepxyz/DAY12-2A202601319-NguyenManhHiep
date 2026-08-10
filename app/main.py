@@ -87,22 +87,32 @@ def health():
     lời câu hỏi "có cần restart container này không?". Nếu nó phụ thuộc
     Redis, Redis chết một nhịp là cả cụm container bị restart theo.
     """
-    raise NotImplementedError("TODO (CP1/CP4): cài đặt /health")
+    # Đang tắt dần → 503 để load balancer rút instance khỏi vòng xoay
+    if lifecycle.shutting_down:
+        return JSONResponse(status_code=503, content={"status": "shutting_down"})
+
+    # Bình thường → 200. KHÔNG gọi Redis/DB/dependency nào ở đây.
+    return {"status": "ok", "service": SERVICE_NAME, "version": SERVICE_VERSION}
 
 
 @app.get("/ready")
 def ready(store: ConversationStore = Depends(get_store)):
     """Readiness probe — đã sẵn sàng nhận traffic chưa?
 
-    TODO (CP4):
-      - Đang tắt dần → 503 ``{"status": "shutting_down"}``
-      - ``store.ping()`` False → 503 ``{"status": "not ready", "redis": False}``
-      - Ngược lại → ``{"status": "ready", "redis": True}``
+    # TODO (CP4):
+    #   - Đang tắt dần → 503 ``{"status": "shutting_down"}``
+    #   - ``store.ping()`` False → 503 ``{"status": "not ready", "redis": False}``
+    #   - Ngược lại → ``{"status": "ready", "redis": True}``
 
-    Khác /health ở chỗ: endpoint này ĐƯỢC PHÉP kiểm tra dependency. Load
-    balancer dùng nó để quyết định có đẩy request vào instance này không.
-    """
-    raise NotImplementedError("TODO (CP4): cài đặt /ready")
+    # Khác /health ở chỗ: endpoint này ĐƯỢC PHÉP kiểm tra dependency. Load
+    # balancer dùng nó để quyết định có đẩy request vào instance này không.
+    # """
+    # raise NotImplementedError("TODO (CP4): cài đặt /ready")
+    if lifecycle.shutting_down:
+        return JSONResponse(status_code=503, content={"status": "shutting_down"})
+    if not store.ping():
+        return JSONResponse(status_code=503, content={"status": "not ready", "redis": False})
+    return {"status": "ready", "redis": True}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -145,7 +155,43 @@ def ask(
     ``user_id`` do ``verify_api_key`` trả về, nên request không có API key
     hợp lệ sẽ dừng ở 401 trước khi chạm vào bất cứ dòng nào ở đây.
     """
-    raise NotImplementedError("TODO (CP3/CP4): cài đặt /ask")
+    # 1. Rate limit — user gọi quá nhanh? (429)
+    limiter.check(user_id)
+
+    # 2. Cost guard — user hết ngân sách tháng? (402)
+    guard.check(user_id)
+
+    # 3. Lấy lịch sử hội thoại của user
+    history = store.get_history(user_id)
+
+    # 4. Gọi LLM (mock) — TIỀN MẤT Ở BƯỚC NÀY, nên 2 bước check ở trên
+    #    phải chạy trước. Chặn sau khi đã gọi thì vừa mất tiền vừa trả lỗi.
+    result = ask_llm(payload.question, history)
+
+    # 5. Lưu lượt hỏi + lượt trả lời vào lịch sử
+    store.append(user_id, "user", payload.question)
+    store.append(user_id, "assistant", result["answer"])
+
+    # 6. Cộng chi phí vào ngân sách của user
+    guard.record(user_id, result["cost_usd"])
+
+    # 7. Ghi log JSON một dòng cho mỗi lượt hỏi
+    log_event(
+        "ask_completed",
+        user_id=user_id,
+        tokens_in=result["tokens_in"],
+        tokens_out=result["tokens_out"],
+        cost_usd=result["cost_usd"],
+    )
+
+    # 8. Trả về đúng các trường test yêu cầu
+    return {
+        "answer": result["answer"],
+        "user_id": user_id,
+        "history_length": len(history),
+        "cost_usd": result["cost_usd"],
+        "tokens": {"in": result["tokens_in"], "out": result["tokens_out"]},
+    }
 
 
 if __name__ == "__main__":
