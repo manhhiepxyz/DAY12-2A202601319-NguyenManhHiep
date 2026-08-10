@@ -1,0 +1,72 @@
+name: CI
+
+# 1. Kích hoạt đúng lúc: chạy khi push lên main VÀ khi mở pull request vào main.
+#    PR là phần giá trị nhất — bắt lỗi TRƯỚC khi vào nhánh chính.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Job 1: TEST — chạy trên máy sạch của GitHub ──
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # 2. Ghim phiên bản action (@v4) — dùng @main là chạy code mới nhất
+      #    của người khác, đường dẫn tới tấn công chuỗi cung ứng.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 3. Cài dependency — test yêu cầu phải có "requirements.txt"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # 4. Chạy pytest — nhưng KHÔNG chạy test_cp5.py (nó gọi vào bản deploy
+      #    đang sống → trong CI sẽ luôn đỏ). Giới hạn phạm vi test.
+      #    AGENT_API_KEY là biến môi trường GIẢ — máy CI không có .env,
+      #    nhưng Settings (CP1) bắt buộc có khóa → cung cấp qua env: của step.
+      - name: Run tests
+        run: |
+          pytest tests/ -v --ignore=tests/test_cp5.py --ignore=tests/test_bonus_cicd.py
+        env:
+          AGENT_API_KEY: ci-dummy-key
+          REDIS_URL: "fake://"
+
+  # ── Job 2: BUILD — build Docker image trên máy sạch ──
+  #    Bắt lỗi kiểu "file chỉ có trên máy tôi" hoặc .dockerignore loại nhầm.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 5. Build thật — runner GitHub có sẵn Docker
+      - name: Build Docker image
+        run: docker build -t day12-agent:ci .
+
+  # ── Job 3: DEPLOY — chỉ chạy khi test + build ĐỀU XANH ──
+  deploy:
+    runs-on: ubuntu-latest
+    # 6. needs: cổng chất lượng — thiếu nó thì test và deploy chạy SONG SONG,
+    #    code hỏng vẫn lên production trong khi test đang đỏ.
+    needs: [test, build]
+    # 7. if: mở pull request không được kéo theo một lần deploy —
+    #    chỉ deploy khi push vào main.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      # 8. Gọi Deploy Hook của Render (xem cách lấy bên dưới).
+      #    ${{ secrets.RENDER_DEPLOY_HOOK }} — token KHÔNG nằm trong file này,
+      #    test sẽ quét và bắt nếu bạn dán thẳng token vào đây.
+      - name: Trigger Render deploy
+        run: |
+          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" || exit 1
+
+      # 9. Smoke test sau deploy — chỉ biết "lệnh chạy xong" chưa đủ,
+      #    phải biết "service còn sống". curl -f trả mã lỗi khi HTTP != 2xx.
+      - name: Smoke test
+        run: |
+          sleep 45
+          curl -fsS "https://day12-agent-wqc6.onrender.com/health"
