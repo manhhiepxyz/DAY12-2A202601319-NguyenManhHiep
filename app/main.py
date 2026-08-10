@@ -199,3 +199,7 @@ if __name__ == "__main__":
 
     settings = get_settings()
     uvicorn.run(app, host="0.0.0.0", port=settings.port)
+
+@app.get("/")
+def root():
+    return {"message": "Day 12 Agent API — xem /health, /ready, /ask"}

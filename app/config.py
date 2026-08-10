@@ -70,12 +70,6 @@ class Settings(BaseSettings):
 
     # log_level — mức log: DEBUG | INFO | WARNING | ERROR.
     log_level: str = "INFO"
-    port: int = 8000
-    agent_api_key: str
-    redis_url: str = "redis://localhost:6379/0"
-    rate_liment_per_minute: int = 10
-    monthly_budget_usd: float = 10.0
-    log_level: str = "INFO"
 
 
 @lru_cache(maxsize=1)
